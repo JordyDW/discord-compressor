@@ -4,6 +4,8 @@
  * FFmpeg-free) with an estimate -> transcode -> verify -> retry loop.
  */
 import { Video, getVideoMetaData, getRealPath } from 'react-native-compressor';
+
+export const cancelCompression = (id: string) => Video.cancelCompression(id);
 import { planEncode, TARGET_BYTES, MAX_ATTEMPTS } from './encodePlan';
 
 export type CompressSuccess = {
@@ -33,6 +35,8 @@ export type CompressHooks = {
   onProgress?: (progress: number) => void;
   /** Fired when a new pass starts, so the UI can show "attempt 2 of 3, ~700 kbps". */
   onStage?: (stage: { attempt: number; totalAttempts: number; targetKbps: number }) => void;
+  /** Receives the native cancellation token so the caller can call cancelCompression(id). */
+  onCancellationId?: (id: string) => void;
 };
 
 /** react-native-compressor's metadata map for a video file. */
@@ -77,6 +81,7 @@ export async function compressUnderLimit(
         bitrate: plan.videoBitrate,
         maxSize: plan.maxSize,
         progressDivider: 5,
+        getCancellationId: (id) => hooks.onCancellationId?.(id),
       },
       (progress) => hooks.onProgress?.(progress),
     );

@@ -7,7 +7,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useShareIntent } from 'expo-share-intent';
 
 import { theme } from './src/theme';
-import { compressUnderLimit } from './src/lib/compress';
+import { compressUnderLimit, cancelCompression } from './src/lib/compress';
 import { TARGET_BYTES } from './src/lib/encodePlan';
 import { sendToDiscord, sendMultipleToDiscord, saveCopy } from './src/lib/share';
 import { isTerminal, outputUri, type BatchItem, type ItemState } from './src/lib/queue';
@@ -37,6 +37,10 @@ function AppInner() {
   const busyRef = useRef(false);
   // ids the user removed mid-batch, so the loop skips them before they encode
   const removedRef = useRef<Set<string>>(new Set());
+  // cancellation token for the running Video.compress() call
+  const cancelIdRef = useRef<string | null>(null);
+  // set to true when the user taps Cancel; the encode loop checks this to stop
+  const cancelledRef = useRef(false);
 
   // Compress a queue of videos one at a time (MediaCodec is happier sequential),
   // saving a copy of each as it finishes. Works for a single clip or a batch.
@@ -44,6 +48,7 @@ function AppInner() {
     if (busyRef.current || inputs.length === 0) return;
     busyRef.current = true;
     removedRef.current = new Set();
+    cancelledRef.current = false;
 
     const items: BatchItem[] = inputs.map((inp, i) => ({
       id: `item-${i}`,
@@ -66,7 +71,7 @@ function AppInner() {
       await activateKeepAwakeAsync(KEEP_AWAKE_TAG);
 
       for (const item of items) {
-        if (removedRef.current.has(item.id)) continue; // user removed it before it started
+        if (removedRef.current.has(item.id) || cancelledRef.current) continue;
         setState(item.id, { kind: 'working', progress: 0 });
         try {
           const result = await compressUnderLimit(
@@ -82,6 +87,9 @@ function AppInner() {
                     ? { ...it, state: { kind: 'working', progress: 0, stage } }
                     : it,
                 ),
+              onCancellationId: (id) => {
+                cancelIdRef.current = id;
+              },
             },
             item.targetBytes,
           );
@@ -147,6 +155,16 @@ function AppInner() {
     setPhase({ kind: 'idle' });
   }, []);
 
+  const cancel = useCallback(() => {
+    cancelledRef.current = true;
+    if (cancelIdRef.current) {
+      cancelCompression(cancelIdRef.current);
+      cancelIdRef.current = null;
+    }
+    busyRef.current = false;
+    setPhase({ kind: 'idle' });
+  }, []);
+
   // Drop a clip from the batch. Queued clips are skipped before they encode;
   // finished clips are just removed from the results list. Emptying the list resets.
   const removeItem = useCallback((id: string) => {
@@ -185,6 +203,7 @@ function AppInner() {
             .filter((it) => it.state.kind === 'queued')
             .map((it) => ({ id: it.id, name: it.name }))}
           onRemove={removeItem}
+          onCancel={cancel}
         />
       );
     } else if (items.length === 1) {

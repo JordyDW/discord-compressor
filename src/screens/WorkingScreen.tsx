@@ -12,10 +12,12 @@ type Props = {
   /** Clips still waiting — each can be removed before it starts encoding. */
   queued?: { id: string; name: string }[];
   onRemove?: (id: string) => void;
+  /** Cancel the entire batch and return to home. */
+  onCancel?: () => void;
 };
 
 /** Progress view shown while the encode loop runs. Screen is kept awake by the orchestrator. */
-export function WorkingScreen({ progress, stage, index, total, name, queued, onRemove }: Props) {
+export function WorkingScreen({ progress, stage, index, total, name, queued, onRemove, onCancel }: Props) {
   const pct = Math.round(Math.min(Math.max(progress, 0), 1) * 100);
   const batch = typeof total === 'number' && total > 1;
   const upNext = queued ?? [];
@@ -41,6 +43,12 @@ export function WorkingScreen({ progress, stage, index, total, name, queued, onR
       <Text style={styles.pct}>{pct}%</Text>
 
       <Text style={styles.note}>Keep the app open — this can take a moment for long clips.</Text>
+
+      {onCancel ? (
+        <TouchableOpacity style={styles.cancel} onPress={onCancel} activeOpacity={0.7}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+      ) : null}
 
       {upNext.length > 0 ? (
         <View style={styles.queue}>
@@ -108,4 +116,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   removeText: { color: theme.textMuted, fontSize: 14, fontWeight: '700' },
+  cancel: { paddingVertical: 12, alignItems: 'center' },
+  cancelText: { color: theme.textMuted, fontSize: 15, fontWeight: '600' },
 });
