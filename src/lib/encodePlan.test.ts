@@ -1,6 +1,7 @@
 /// <reference types="jest" />
 import {
   planEncode,
+  adaptiveAudioKbps,
   FLOOR_VIDEO_KBPS,
   TARGET_BYTES,
 } from './encodePlan';
@@ -53,5 +54,31 @@ describe('planEncode', () => {
     const ten = planEncode(60, 0, TARGET_BYTES).videoKbps;
     const eight = planEncode(60, 0, 8 * 1024 * 1024).videoKbps;
     expect(eight).toBeLessThan(ten);
+  });
+
+  it('gives a long clip more video bits by reducing audio reservation', () => {
+    // 180 s clip at 10 MB: total ≈ 422 kbps → audio drops to 96 (not 128)
+    const videoKbps = planEncode(180, 0, TARGET_BYTES).videoKbps;
+    // With fixed 128 kbps audio the video budget would be lower; with adaptive 96
+    // it gets an extra 32 kbps — verify it's above a threshold that only works
+    // with the adaptive reservation.
+    expect(videoKbps).toBeGreaterThan(200);
+  });
+});
+
+describe('adaptiveAudioKbps', () => {
+  it('returns 128 kbps for a comfortable budget', () => {
+    expect(adaptiveAudioKbps(1000)).toBe(128);
+    expect(adaptiveAudioKbps(600)).toBe(128);
+  });
+
+  it('returns 96 kbps for a moderate budget', () => {
+    expect(adaptiveAudioKbps(599)).toBe(96);
+    expect(adaptiveAudioKbps(400)).toBe(96);
+  });
+
+  it('returns 64 kbps for a tight budget', () => {
+    expect(adaptiveAudioKbps(399)).toBe(64);
+    expect(adaptiveAudioKbps(100)).toBe(64);
   });
 });

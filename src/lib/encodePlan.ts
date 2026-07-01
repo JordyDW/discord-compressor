@@ -22,8 +22,19 @@ export const TARGET_PRESETS = [
 /** Aim a little under the cap so container overhead / encoder variance never pushes us over. */
 export const SAFETY = 0.92;
 
-/** Bitrate we reserve for the audio track when budgeting video bits (kbps). */
-export const RESERVED_AUDIO_KBPS = 128;
+/**
+ * Pick an audio bitrate that gracefully backs off as the total budget tightens,
+ * freeing more room for video quality on long clips.
+ *
+ *  ≥ 600 kbps total → 128 kbps  (comfortable budget, keep full stereo quality)
+ *  ≥ 400 kbps total →  96 kbps  (moderate squeeze)
+ *   < 400 kbps total →  64 kbps  (very tight — mono-quality audio is fine vs. awful video)
+ */
+export function adaptiveAudioKbps(totalKbps: number): number {
+  if (totalKbps >= 600) return 128;
+  if (totalKbps >= 400) return 96;
+  return 64;
+}
 
 /** Lowest video bitrate we'll attempt before declaring a clip "too long to fit" (kbps). */
 export const FLOOR_VIDEO_KBPS = 350;
@@ -62,7 +73,7 @@ export function planEncode(
   const totalKbps = (targetBytes * SAFETY * 8) / 1000 / safeDuration;
 
   // Pre-floor target after subtracting audio headroom and applying retry backoff.
-  const target = (totalKbps - RESERVED_AUDIO_KBPS) * Math.pow(RETRY_BACKOFF, attempt);
+  const target = (totalKbps - adaptiveAudioKbps(totalKbps)) * Math.pow(RETRY_BACKOFF, attempt);
 
   // Resolution ladder keyed off the target bitrate (decided before we clamp to the floor).
   let maxSize = 1280;
