@@ -173,14 +173,18 @@ npx tsc --noEmit  # type-check
 
 ### Planned
 
-- [ ] **Trim-to-fit** for clips too long to hit 10 MB even at the floor bitrate
-      (today they surface a "too long — trim it" message)
-- [ ] **Target-size presets** — 10 / 25 / 50 MB for boosted servers or Nitro, with a
-      custom slider
-- [ ] **Before/after preview** — thumbnail + playback before sending
-- [ ] **Cancel an in-progress encode** (today only *queued* clips can be removed)
-- [ ] Per-clip overrides in a batch (resolution / target)
-- [ ] Tighter audio handling — drop to 96 kbps / mono when the budget is very tight
+- [x] **Target-size presets** — 10 / 25 / 50 MB chips on the home screen; per-clip
+      override in the batch queue
+- [x] **Adaptive audio budget** — audio drops from 128 → 96 → 64 kbps as the total
+      bitrate budget shrinks, giving more bits to video on long clips
+- [x] **Cancel in-progress encode** — Cancel button aborts the running job and resets
+      to idle, discarding remaining queued clips
+- [x] **Before/after thumbnail preview** — thumbnails generated after each encode and
+      shown side-by-side on the result screen and in batch rows
+- [x] **Per-clip target overrides** — 10 / 25 / 50 MB chips on each queued clip in
+      WorkingScreen's "Up next" list
+- [x] **Trim-to-fit** — when a clip is too long for any quality, a "Trim to fit (Xs) →"
+      button silently cuts the video to the maximum fitting duration and re-compresses
 
 ### Longer term
 
