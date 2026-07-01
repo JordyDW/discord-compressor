@@ -159,10 +159,31 @@ npx tsc --noEmit  # type-check
 2. Standalone: open app → pick the same clip → same result.
 3. A long 4K clip → shows the graceful **"too long, trim it"** message.
 
-## Roadmap (not yet)
+## Roadmap
 
-Trim-to-fit for long clips · target-size slider & presets · before/after preview ·
-iOS (`expo-share-intent` ships an iOS share extension) · optional backend transcode
-fallback for clips too big for on-device.
+### Shipped
 
-_Done since the MVP: batch / multi-video compression._
+- [x] On-device size-targeting compression (**< 10 MB**) — estimate → transcode →
+      verify → retry loop with a resolution ladder
+- [x] Share target (`SEND` / `SEND_MULTIPLE`) + standalone picker
+- [x] **Batch / multi-video** with a removable queue and **Send all to Discord**
+- [x] Saves a compressed copy of each clip to the gallery
+- [x] Custom app icon, safe-area layout, dark Discord-flavoured UI
+- [x] Expo SDK 57 / React Native 0.86
+
+### Planned
+
+- [ ] **Trim-to-fit** for clips too long to hit 10 MB even at the floor bitrate
+      (today they surface a "too long — trim it" message)
+- [ ] **Target-size presets** — 10 / 25 / 50 MB for boosted servers or Nitro, with a
+      custom slider
+- [ ] **Before/after preview** — thumbnail + playback before sending
+- [ ] **Cancel an in-progress encode** (today only *queued* clips can be removed)
+- [ ] Per-clip overrides in a batch (resolution / target)
+- [ ] Tighter audio handling — drop to 96 kbps / mono when the budget is very tight
+
+### Longer term
+
+- [ ] **iOS** support (`expo-share-intent` ships an iOS share extension)
+- [ ] Universal / release-signed APK builds for wider distribution
+- [ ] Optional backend transcode fallback for clips too big for on-device
