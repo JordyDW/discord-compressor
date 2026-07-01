@@ -10,7 +10,14 @@ export type ItemState =
   | { kind: 'tooLong'; result: CompressTooLong; saved: boolean }
   | { kind: 'error'; message: string };
 
-export type BatchItem = { id: string; uri: string; name: string; state: ItemState };
+export type BatchItem = {
+  id: string;
+  uri: string;
+  name: string;
+  /** Output-size cap for this clip in bytes (defaults to the batch target). */
+  targetBytes: number;
+  state: ItemState;
+};
 
 /** An item is terminal once its pipeline has finished (successfully or not). */
 export const isTerminal = (s: ItemState): boolean =>

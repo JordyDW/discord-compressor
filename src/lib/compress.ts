@@ -53,20 +53,21 @@ async function toRealPath(uri: string): Promise<string> {
 export async function compressUnderLimit(
   inputUri: string,
   hooks: CompressHooks = {},
+  targetBytes: number = TARGET_BYTES,
 ): Promise<CompressResult> {
   const realPath = await toRealPath(inputUri);
   const meta = (await getVideoMetaData(realPath)) as VideoMeta;
   const originalSize = meta.size;
 
   // Already small enough — don't re-encode and lose quality for nothing.
-  if (originalSize <= TARGET_BYTES * 0.95) {
+  if (originalSize <= targetBytes * 0.95) {
     return { ok: true, uri: realPath, originalSize, finalSize: originalSize, skipped: true, durationSec: meta.duration };
   }
 
   let best: { uri: string; size: number } | null = null;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    const plan = planEncode(meta.duration, attempt);
+    const plan = planEncode(meta.duration, attempt, targetBytes);
     hooks.onStage?.({ attempt: attempt + 1, totalAttempts: MAX_ATTEMPTS, targetKbps: plan.videoKbps });
 
     const outUri = await Video.compress(
@@ -83,7 +84,7 @@ export async function compressUnderLimit(
     const outMeta = (await getVideoMetaData(outUri)) as VideoMeta;
     if (!best || outMeta.size < best.size) best = { uri: outUri, size: outMeta.size };
 
-    if (outMeta.size <= TARGET_BYTES) {
+    if (outMeta.size <= targetBytes) {
       return { ok: true, uri: outUri, originalSize, finalSize: outMeta.size, skipped: false, durationSec: meta.duration };
     }
 

@@ -8,6 +8,7 @@ import { useShareIntent } from 'expo-share-intent';
 
 import { theme } from './src/theme';
 import { compressUnderLimit } from './src/lib/compress';
+import { TARGET_BYTES } from './src/lib/encodePlan';
 import { sendToDiscord, sendMultipleToDiscord, saveCopy } from './src/lib/share';
 import { isTerminal, outputUri, type BatchItem, type ItemState } from './src/lib/queue';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -32,13 +33,14 @@ export default function App() {
 function AppInner() {
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
+  const [targetBytes, setTargetBytes] = useState<number>(TARGET_BYTES);
   const busyRef = useRef(false);
   // ids the user removed mid-batch, so the loop skips them before they encode
   const removedRef = useRef<Set<string>>(new Set());
 
   // Compress a queue of videos one at a time (MediaCodec is happier sequential),
   // saving a copy of each as it finishes. Works for a single clip or a batch.
-  const start = useCallback(async (inputs: Input[]) => {
+  const start = useCallback(async (inputs: Input[], target: number) => {
     if (busyRef.current || inputs.length === 0) return;
     busyRef.current = true;
     removedRef.current = new Set();
@@ -47,6 +49,7 @@ function AppInner() {
       id: `item-${i}`,
       uri: inp.uri,
       name: inp.name,
+      targetBytes: target,
       state: { kind: 'queued' },
     }));
     setPhase({ kind: 'run', items });
@@ -66,18 +69,22 @@ function AppInner() {
         if (removedRef.current.has(item.id)) continue; // user removed it before it started
         setState(item.id, { kind: 'working', progress: 0 });
         try {
-          const result = await compressUnderLimit(item.uri, {
-            onProgress: (progress) =>
-              patch(item.id, (it) =>
-                it.state.kind === 'working' ? { ...it, state: { ...it.state, progress } } : it,
-              ),
-            onStage: (stage) =>
-              patch(item.id, (it) =>
-                it.state.kind === 'working'
-                  ? { ...it, state: { kind: 'working', progress: 0, stage } }
-                  : it,
-              ),
-          });
+          const result = await compressUnderLimit(
+            item.uri,
+            {
+              onProgress: (progress) =>
+                patch(item.id, (it) =>
+                  it.state.kind === 'working' ? { ...it, state: { ...it.state, progress } } : it,
+                ),
+              onStage: (stage) =>
+                patch(item.id, (it) =>
+                  it.state.kind === 'working'
+                    ? { ...it, state: { kind: 'working', progress: 0, stage } }
+                    : it,
+                ),
+            },
+            item.targetBytes,
+          );
 
           const state: ItemState = result.ok
             ? { kind: 'done', result, saved: false }
@@ -119,10 +126,10 @@ function AppInner() {
     const videos = files.filter((f) => f.mimeType?.startsWith('video/'));
     const use = videos.length ? videos : files;
     if (use.length) {
-      start(use.map((f, i) => ({ uri: f.path, name: f.fileName || `Video ${i + 1}` })));
+      start(use.map((f, i) => ({ uri: f.path, name: f.fileName || `Video ${i + 1}` })), targetBytes);
       resetShareIntent(); // clear so a re-open doesn't re-run the last share
     }
-  }, [hasShareIntent, shareIntent, start, resetShareIntent]);
+  }, [hasShareIntent, shareIntent, start, resetShareIntent, targetBytes]);
 
   const pickVideos = useCallback(async () => {
     const res = await ImagePicker.launchImageLibraryAsync({
@@ -131,9 +138,9 @@ function AppInner() {
       quality: 1,
     });
     if (!res.canceled && res.assets.length) {
-      start(res.assets.map((a, i) => ({ uri: a.uri, name: a.fileName || `Video ${i + 1}` })));
+      start(res.assets.map((a, i) => ({ uri: a.uri, name: a.fileName || `Video ${i + 1}` })), targetBytes);
     }
-  }, [start]);
+  }, [start, targetBytes]);
 
   const reset = useCallback(() => {
     busyRef.current = false;
@@ -157,7 +164,7 @@ function AppInner() {
 
   let content: ReactNode = null;
   if (phase.kind === 'idle') {
-    content = <HomeScreen onPick={pickVideos} />;
+    content = <HomeScreen onPick={pickVideos} target={targetBytes} onTarget={setTargetBytes} />;
   } else {
     const { items } = phase;
     const allDone = items.every((it) => isTerminal(it.state));
@@ -190,6 +197,7 @@ function AppInner() {
           <ResultScreen
             result={single.result}
             saved={single.saved}
+            targetBytes={only.targetBytes}
             onSend={() => {
               const out = outputUri(single);
               if (out) sendToDiscord(out);

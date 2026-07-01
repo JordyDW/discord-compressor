@@ -9,6 +9,16 @@
 /** Discord free per-file limit (lowered from 25 MB to 10 MB in late 2024). */
 export const TARGET_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Selectable output-size targets. 10 MB is Discord's free cap; 25 / 50 MB fit
+ * boosted servers or Nitro tiers where the limit is higher.
+ */
+export const TARGET_PRESETS = [
+  { label: '10 MB', bytes: 10 * 1024 * 1024 },
+  { label: '25 MB', bytes: 25 * 1024 * 1024 },
+  { label: '50 MB', bytes: 50 * 1024 * 1024 },
+] as const;
+
 /** Aim a little under the cap so container overhead / encoder variance never pushes us over. */
 export const SAFETY = 0.92;
 

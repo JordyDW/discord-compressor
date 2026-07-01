@@ -6,19 +6,21 @@ import type { CompressResult } from '../lib/compress';
 type Props = {
   result: CompressResult;
   saved: boolean;
+  targetBytes: number;
   onSend: () => void;
   onReset: () => void;
 };
 
 /** Shown after the encode finishes — handles both the success and "too long to fit" cases. */
-export function ResultScreen({ result, saved, onSend, onReset }: Props) {
+export function ResultScreen({ result, saved, targetBytes, onSend, onReset }: Props) {
   const fits = result.ok;
   const finalSize = result.ok ? result.finalSize : result.bestSize;
+  const cap = formatBytes(targetBytes);
 
   return (
     <View style={styles.container}>
       <Text style={[styles.badge, { color: fits ? theme.success : theme.danger }]}>
-        {fits ? (result.skipped ? '✓ Already under 10 MB' : '✓ Ready for Discord') : '⚠ Still over 10 MB'}
+        {fits ? (result.skipped ? `✓ Already under ${cap}` : '✓ Ready for Discord') : `⚠ Still over ${cap}`}
       </Text>
 
       <View style={styles.sizes}>
@@ -37,7 +39,7 @@ export function ResultScreen({ result, saved, onSend, onReset }: Props) {
 
       {!fits ? (
         <Text style={styles.warn}>
-          This clip is too long to fit 10 MB even at the lowest quality. Trim it shorter and try
+          This clip is too long to fit {cap} even at the lowest quality. Trim it shorter and try
           again — you can still send the {formatBytes(finalSize)} version below.
         </Text>
       ) : null}
