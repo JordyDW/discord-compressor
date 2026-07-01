@@ -3,7 +3,7 @@
  * Discord's free 10 MB cap, using react-native-compressor (native MediaCodec,
  * FFmpeg-free) with an estimate -> transcode -> verify -> retry loop.
  */
-import { Video, getVideoMetaData, getRealPath } from 'react-native-compressor';
+import { Video, getVideoMetaData, getRealPath, createVideoThumbnail } from 'react-native-compressor';
 
 export const cancelCompression = (id: string) => Video.cancelCompression(id);
 import { planEncode, TARGET_BYTES, MAX_ATTEMPTS } from './encodePlan';
@@ -16,6 +16,10 @@ export type CompressSuccess = {
   /** True when the source already fit and we skipped re-encoding entirely. */
   skipped: boolean;
   durationSec: number;
+  /** Thumbnail path for the original clip (before compression). */
+  originalThumbnail?: string;
+  /** Thumbnail path for the compressed output. */
+  thumbnail?: string;
 };
 
 export type CompressTooLong = {
@@ -26,6 +30,10 @@ export type CompressTooLong = {
   bestUri: string;
   bestSize: number;
   durationSec: number;
+  /** Thumbnail path for the original clip (before compression). */
+  originalThumbnail?: string;
+  /** Thumbnail path for the best-effort output. */
+  thumbnail?: string;
 };
 
 export type CompressResult = CompressSuccess | CompressTooLong;
@@ -41,6 +49,15 @@ export type CompressHooks = {
 
 /** react-native-compressor's metadata map for a video file. */
 type VideoMeta = { size: number; duration: number; width: number; height: number; extension: string };
+
+async function thumb(uri: string): Promise<string | undefined> {
+  try {
+    const t = await createVideoThumbnail(uri, { quality: 0.6 });
+    return t.path;
+  } catch {
+    return undefined;
+  }
+}
 
 /** Resolve a content:// URI (from a share intent / picker) to a real file path the encoder can read. */
 async function toRealPath(uri: string): Promise<string> {
@@ -65,8 +82,11 @@ export async function compressUnderLimit(
 
   // Already small enough — don't re-encode and lose quality for nothing.
   if (originalSize <= targetBytes * 0.95) {
-    return { ok: true, uri: realPath, originalSize, finalSize: originalSize, skipped: true, durationSec: meta.duration };
+    const thumbnail = await thumb(realPath);
+    return { ok: true, uri: realPath, originalSize, finalSize: originalSize, skipped: true, durationSec: meta.duration, thumbnail };
   }
+
+  const originalThumbnail = await thumb(realPath);
 
   let best: { uri: string; size: number } | null = null;
 
@@ -90,13 +110,15 @@ export async function compressUnderLimit(
     if (!best || outMeta.size < best.size) best = { uri: outUri, size: outMeta.size };
 
     if (outMeta.size <= targetBytes) {
-      return { ok: true, uri: outUri, originalSize, finalSize: outMeta.size, skipped: false, durationSec: meta.duration };
+      const thumbnail = await thumb(outUri);
+      return { ok: true, uri: outUri, originalSize, finalSize: outMeta.size, skipped: false, durationSec: meta.duration, originalThumbnail, thumbnail };
     }
 
     // At the quality floor already — additional passes can't shrink it further.
     if (plan.atFloor) break;
   }
 
+  const thumbnail = await thumb(best!.uri);
   return {
     ok: false,
     reason: 'too_long',
@@ -104,5 +126,7 @@ export async function compressUnderLimit(
     bestUri: best!.uri,
     bestSize: best!.size,
     durationSec: meta.duration,
+    originalThumbnail,
+    thumbnail,
   };
 }

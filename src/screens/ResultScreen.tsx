@@ -1,4 +1,4 @@
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { theme } from '../theme';
 import { formatBytes } from '../lib/share';
 import type { CompressResult } from '../lib/compress';
@@ -22,6 +22,24 @@ export function ResultScreen({ result, saved, targetBytes, onSend, onReset }: Pr
       <Text style={[styles.badge, { color: fits ? theme.success : theme.danger }]}>
         {fits ? (result.skipped ? `✓ Already under ${cap}` : '✓ Ready for Discord') : `⚠ Still over ${cap}`}
       </Text>
+
+      {(result.originalThumbnail || result.thumbnail) ? (
+        <View style={styles.thumbRow}>
+          <View style={styles.thumbBox}>
+            {result.originalThumbnail ? (
+              <Image source={{ uri: result.originalThumbnail }} style={styles.thumb} />
+            ) : <View style={styles.thumb} />}
+            <Text style={styles.thumbLabel}>Before</Text>
+          </View>
+          <Text style={styles.arrow}>→</Text>
+          <View style={styles.thumbBox}>
+            {result.thumbnail ? (
+              <Image source={{ uri: result.thumbnail }} style={styles.thumb} />
+            ) : <View style={styles.thumb} />}
+            <Text style={styles.thumbLabel}>After</Text>
+          </View>
+        </View>
+      ) : null}
 
       <View style={styles.sizes}>
         <View style={styles.sizeBox}>
@@ -60,6 +78,10 @@ export function ResultScreen({ result, saved, targetBytes, onSend, onReset }: Pr
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 24, gap: theme.gap },
   badge: { fontSize: 18, fontWeight: '800', textAlign: 'center' },
+  thumbRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  thumbBox: { alignItems: 'center', gap: 6 },
+  thumb: { width: 120, height: 80, borderRadius: theme.radius, backgroundColor: theme.surface },
+  thumbLabel: { color: theme.textMuted, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
   sizes: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16, marginVertical: 8 },
   sizeBox: { backgroundColor: theme.surface, borderRadius: theme.radius, padding: 16, minWidth: 110, alignItems: 'center' },
   sizeLabel: { color: theme.textMuted, fontSize: 13, marginBottom: 4 },

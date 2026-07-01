@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { theme } from '../theme';
 import { formatBytes } from '../lib/share';
 import { outputUri, type BatchItem } from '../lib/queue';
@@ -88,9 +88,15 @@ function Row({ item, onSend, onRemove }: { item: BatchItem; onSend: () => void; 
   else if (s.kind === 'error') detail = s.message;
   else detail = '…';
 
+  const thumbnailUri = s.kind === 'done' ? s.result.thumbnail : s.kind === 'tooLong' ? s.result.thumbnail : undefined;
+
   return (
     <View style={styles.row}>
-      <Text style={[styles.rowIcon, { color }]}>{icon}</Text>
+      {thumbnailUri ? (
+        <Image source={{ uri: thumbnailUri }} style={styles.rowThumb} />
+      ) : (
+        <Text style={[styles.rowIcon, { color }]}>{icon}</Text>
+      )}
       <View style={styles.rowText}>
         <Text style={styles.rowName} numberOfLines={1}>
           {item.name}
@@ -129,6 +135,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   rowIcon: { fontSize: 18, fontWeight: '800', width: 20, textAlign: 'center' },
+  rowThumb: { width: 48, height: 36, borderRadius: 6 },
   rowText: { flex: 1, gap: 2 },
   rowName: { color: theme.text, fontSize: 15, fontWeight: '600' },
   rowDetail: { color: theme.textMuted, fontSize: 13 },
