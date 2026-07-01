@@ -180,6 +180,13 @@ function AppInner() {
     });
   }, []);
 
+  const setItemTarget = useCallback((id: string, bytes: number) => {
+    setPhase((cur) => {
+      if (cur.kind !== 'run') return cur;
+      return { ...cur, items: cur.items.map((it) => (it.id === id ? { ...it, targetBytes: bytes } : it)) };
+    });
+  }, []);
+
   let content: ReactNode = null;
   if (phase.kind === 'idle') {
     content = <HomeScreen onPick={pickVideos} target={targetBytes} onTarget={setTargetBytes} />;
@@ -201,8 +208,9 @@ function AppInner() {
           name={cur.name}
           queued={items
             .filter((it) => it.state.kind === 'queued')
-            .map((it) => ({ id: it.id, name: it.name }))}
+            .map((it) => ({ id: it.id, name: it.name, targetBytes: it.targetBytes }))}
           onRemove={removeItem}
+          onSetTarget={setItemTarget}
           onCancel={cancel}
         />
       );

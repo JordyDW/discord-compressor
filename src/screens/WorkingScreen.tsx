@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { theme } from '../theme';
+import { TARGET_PRESETS } from '../lib/encodePlan';
 
 type Stage = { attempt: number; totalAttempts: number; targetKbps: number };
 type Props = {
@@ -9,15 +10,17 @@ type Props = {
   index?: number;
   total?: number;
   name?: string;
-  /** Clips still waiting — each can be removed before it starts encoding. */
-  queued?: { id: string; name: string }[];
+  /** Clips still waiting — each can be removed or have their target changed before encoding. */
+  queued?: { id: string; name: string; targetBytes: number }[];
   onRemove?: (id: string) => void;
+  /** Update the target cap for a queued clip. */
+  onSetTarget?: (id: string, bytes: number) => void;
   /** Cancel the entire batch and return to home. */
   onCancel?: () => void;
 };
 
 /** Progress view shown while the encode loop runs. Screen is kept awake by the orchestrator. */
-export function WorkingScreen({ progress, stage, index, total, name, queued, onRemove, onCancel }: Props) {
+export function WorkingScreen({ progress, stage, index, total, name, queued, onRemove, onSetTarget, onCancel }: Props) {
   const pct = Math.round(Math.min(Math.max(progress, 0), 1) * 100);
   const batch = typeof total === 'number' && total > 1;
   const upNext = queued ?? [];
@@ -56,9 +59,31 @@ export function WorkingScreen({ progress, stage, index, total, name, queued, onR
           <ScrollView style={styles.queueList} contentContainerStyle={styles.queueContent}>
             {upNext.map((q) => (
               <View key={q.id} style={styles.queueRow}>
-                <Text style={styles.queueName} numberOfLines={1}>
-                  {q.name}
-                </Text>
+                <View style={styles.queueInfo}>
+                  <Text style={styles.queueName} numberOfLines={1}>
+                    {q.name}
+                  </Text>
+                  {onSetTarget ? (
+                    <View style={styles.queueChips}>
+                      {TARGET_PRESETS.map((p) => {
+                        const active = p.bytes === q.targetBytes;
+                        return (
+                          <TouchableOpacity
+                            key={p.label}
+                            style={[styles.queueChip, active && styles.queueChipActive]}
+                            onPress={() => onSetTarget(q.id, p.bytes)}
+                            hitSlop={6}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={[styles.queueChipText, active && styles.queueChipTextActive]}>
+                              {p.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ) : null}
+                </View>
                 {onRemove ? (
                   <TouchableOpacity
                     onPress={() => onRemove(q.id)}
@@ -106,7 +131,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 14,
   },
-  queueName: { flex: 1, color: theme.textMuted, fontSize: 14 },
+  queueInfo: { flex: 1, gap: 6 },
+  queueName: { color: theme.textMuted, fontSize: 14 },
+  queueChips: { flexDirection: 'row', gap: 6 },
+  queueChip: { paddingVertical: 4, paddingHorizontal: 10, borderRadius: 999, backgroundColor: theme.surfaceAlt, borderWidth: 1, borderColor: 'transparent' },
+  queueChipActive: { borderColor: theme.accent },
+  queueChipText: { color: theme.textMuted, fontSize: 12, fontWeight: '700' },
+  queueChipTextActive: { color: theme.text },
   removeBtn: {
     width: 28,
     height: 28,
