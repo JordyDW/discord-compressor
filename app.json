@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Discord Compressor",
+    "slug": "discord-compressor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "discordcompressor",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.jordydw.discordcompressor",
+      "adaptiveIcon": {
+        "backgroundColor": "#5865f2",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_MEDIA_VIDEO",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "react-native-compressor",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Discord Compressor to access your videos so you can pick one to compress."
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["video/*"],
+          "androidMultiIntentFilters": ["video/*"]
+        }
+      ]
+    ]
+  }
+}
