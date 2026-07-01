@@ -130,6 +130,32 @@ Notes:
   signing key, so **installing one replaces the other** on the device.
 - For a cloud build instead: `eas build --profile preview -p android` (see [`eas.json`](eas.json)).
 
+### iOS — EAS Build (macOS or cloud)
+
+iOS builds require Xcode (macOS only) or [EAS Build](https://docs.expo.dev/build/introduction/)
+(Expo's cloud builder). You also need an [Apple Developer account](https://developer.apple.com)
+for signing.
+
+**Cloud build (recommended — works from any OS):**
+
+```bash
+eas build --profile preview -p ios          # ad-hoc IPA for physical device
+eas build --profile preview-simulator -p ios  # simulator build for local testing
+eas build --profile production -p ios       # App Store build
+```
+
+**Local build (macOS with Xcode):**
+
+```bash
+npx expo prebuild -p ios   # generates ./ios from app.json
+npx expo run:ios           # build + launch in simulator
+```
+
+The iOS share extension (appears in the system Share sheet when you share a video from
+Photos or Files) is configured via `expo-share-intent`'s `iosActivationRules` in
+[`app.json`](app.json). It accepts up to 5 videos at once and uses the app group
+`group.com.jordydw.discordcompressor` to hand URIs to the main app.
+
 ## App icon
 
 <p align="center">
@@ -188,6 +214,8 @@ npx tsc --noEmit  # type-check
 
 ### Longer term
 
-- [ ] **iOS** support (`expo-share-intent` ships an iOS share extension)
+- [x] **iOS** support — `bundleIdentifier`, `NSPhotoLibrary` permissions, share-extension
+      `iosActivationRules` for `video/*`, and EAS Build profiles all configured; requires
+      an Apple Developer account + macOS/EAS to build
 - [ ] Universal / release-signed APK builds for wider distribution
 - [ ] Optional backend transcode fallback for clips too big for on-device

@@ -9,7 +9,12 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "bundleIdentifier": "com.jordydw.discordcompressor",
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryAddUsageDescription": "Discord Compressor saves a compressed copy of each video to your photo library.",
+        "NSPhotoLibraryUsageDescription": "Discord Compressor needs access to your photo library so you can pick videos to compress."
+      }
     },
     "android": {
       "package": "com.jordydw.discordcompressor",
@@ -39,6 +44,10 @@
       [
         "expo-share-intent",
         {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsVideoWithMaxCount": 5
+          },
+          "iosAppGroupIdentifier": "group.com.jordydw.discordcompressor",
           "androidIntentFilters": ["video/*"],
           "androidMultiIntentFilters": ["video/*"]
         }
