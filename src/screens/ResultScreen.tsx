@@ -8,11 +8,12 @@ type Props = {
   saved: boolean;
   targetBytes: number;
   onSend: () => void;
+  onTrimToFit?: () => void;
   onReset: () => void;
 };
 
 /** Shown after the encode finishes — handles both the success and "too long to fit" cases. */
-export function ResultScreen({ result, saved, targetBytes, onSend, onReset }: Props) {
+export function ResultScreen({ result, saved, targetBytes, onSend, onTrimToFit, onReset }: Props) {
   const fits = result.ok;
   const finalSize = result.ok ? result.finalSize : result.bestSize;
   const cap = formatBytes(targetBytes);
@@ -55,11 +56,18 @@ export function ResultScreen({ result, saved, targetBytes, onSend, onReset }: Pr
         </View>
       </View>
 
-      {!fits ? (
-        <Text style={styles.warn}>
-          This clip is too long to fit {cap} even at the lowest quality. Trim it shorter and try
-          again — you can still send the {formatBytes(finalSize)} version below.
-        </Text>
+      {!fits && !result.ok ? (
+        <>
+          <Text style={styles.warn}>
+            This clip is too long to fit {cap} even at the lowest quality.
+            Trim to {Math.floor(result.maxFitSec)}s to make it fit.
+          </Text>
+          {onTrimToFit ? (
+            <TouchableOpacity style={styles.trim} onPress={onTrimToFit} activeOpacity={0.85}>
+              <Text style={styles.trimText}>Trim to fit ({Math.floor(result.maxFitSec)}s) →</Text>
+            </TouchableOpacity>
+          ) : null}
+        </>
       ) : null}
 
       <TouchableOpacity style={styles.primary} onPress={onSend} activeOpacity={0.85}>
@@ -88,6 +96,8 @@ const styles = StyleSheet.create({
   sizeValue: { color: theme.text, fontSize: 22, fontWeight: '800' },
   arrow: { color: theme.textMuted, fontSize: 22, fontWeight: '700' },
   warn: { color: theme.textMuted, fontSize: 14, textAlign: 'center', lineHeight: 20 },
+  trim: { backgroundColor: theme.surfaceAlt, paddingVertical: 14, borderRadius: theme.radius, alignItems: 'center', borderWidth: 1, borderColor: theme.accent },
+  trimText: { color: theme.accent, fontSize: 16, fontWeight: '700' },
   primary: { backgroundColor: theme.accent, paddingVertical: 16, borderRadius: theme.radius, alignItems: 'center' },
   primaryText: { color: '#fff', fontSize: 17, fontWeight: '700' },
   saved: { color: theme.textMuted, fontSize: 13, textAlign: 'center' },

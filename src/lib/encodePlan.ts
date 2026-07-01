@@ -42,6 +42,18 @@ export const FLOOR_VIDEO_KBPS = 350;
 /** A single encode is a guess; we verify the real output size and retry lower up to this many times. */
 export const MAX_ATTEMPTS = 3;
 
+/**
+ * The longest clip that can fit targetBytes at the quality floor.
+ * Clips longer than this will never compress small enough — offer trim-to-fit.
+ */
+export function maxFitDuration(targetBytes = TARGET_BYTES): number {
+  // At the floor the total bitrate is FLOOR + its matching audio budget.
+  // We don't know the audio budget without knowing the duration, so we solve
+  // the conservative case: assume 64 kbps audio (tightest tier).
+  const totalKbps = FLOOR_VIDEO_KBPS + 64;
+  return Math.floor((targetBytes * SAFETY * 8) / 1000 / totalKbps);
+}
+
 /** Each retry multiplies the target bitrate by this to recover from an overshoot. */
 export const RETRY_BACKOFF = 0.8;
 

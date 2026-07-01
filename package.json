@@ -18,7 +18,8 @@
     "react-native-compressor": "^2.0.2",
     "react-native-nitro-modules": "^0.36.1",
     "react-native-safe-area-context": "~5.7.0",
-    "react-native-share": "^12.3.1"
+    "react-native-share": "^12.3.1",
+    "react-native-video-trim": "^8.1.9"
   },
   "devDependencies": {
     "@babel/core": "^7.29.7",

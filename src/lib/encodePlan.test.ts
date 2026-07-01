@@ -2,6 +2,7 @@
 import {
   planEncode,
   adaptiveAudioKbps,
+  maxFitDuration,
   FLOOR_VIDEO_KBPS,
   TARGET_BYTES,
 } from './encodePlan';
@@ -63,6 +64,25 @@ describe('planEncode', () => {
     // it gets an extra 32 kbps — verify it's above a threshold that only works
     // with the adaptive reservation.
     expect(videoKbps).toBeGreaterThan(200);
+  });
+});
+
+describe('maxFitDuration', () => {
+  it('returns a positive number of seconds for the default 10 MB target', () => {
+    const d = maxFitDuration();
+    expect(d).toBeGreaterThan(0);
+    expect(Number.isFinite(d)).toBe(true);
+  });
+
+  it('is proportional to the target size', () => {
+    const d10 = maxFitDuration(10 * 1024 * 1024);
+    const d25 = maxFitDuration(25 * 1024 * 1024);
+    expect(d25).toBeGreaterThan(d10);
+  });
+
+  it('is consistent with planEncode — a clip at maxFitDuration hits the floor', () => {
+    const d = maxFitDuration();
+    expect(planEncode(d, 0).atFloor).toBe(true);
   });
 });
 

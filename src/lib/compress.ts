@@ -4,9 +4,17 @@
  * FFmpeg-free) with an estimate -> transcode -> verify -> retry loop.
  */
 import { Video, getVideoMetaData, getRealPath, createVideoThumbnail } from 'react-native-compressor';
+import { trim as nativeTrim } from 'react-native-video-trim';
+import { planEncode, maxFitDuration, TARGET_BYTES, MAX_ATTEMPTS } from './encodePlan';
 
 export const cancelCompression = (id: string) => Video.cancelCompression(id);
-import { planEncode, TARGET_BYTES, MAX_ATTEMPTS } from './encodePlan';
+
+/** Trim a video to [0, endSec] and return the path of the trimmed file. */
+export async function trimToFit(uri: string, targetBytes = TARGET_BYTES): Promise<string> {
+  const endMs = maxFitDuration(targetBytes) * 1000;
+  const result = await nativeTrim(uri, { startTime: 0, endTime: endMs });
+  return result.outputPath;
+}
 
 export type CompressSuccess = {
   ok: true;
@@ -30,6 +38,10 @@ export type CompressTooLong = {
   bestUri: string;
   bestSize: number;
   durationSec: number;
+  /** Max clip length that would fit the target at floor quality — offer trim-to-fit. */
+  maxFitSec: number;
+  /** Original URI to re-encode after trimming. */
+  originalUri: string;
   /** Thumbnail path for the original clip (before compression). */
   originalThumbnail?: string;
   /** Thumbnail path for the best-effort output. */
@@ -126,6 +138,8 @@ export async function compressUnderLimit(
     bestUri: best!.uri,
     bestSize: best!.size,
     durationSec: meta.duration,
+    maxFitSec: maxFitDuration(targetBytes),
+    originalUri: realPath,
     originalThumbnail,
     thumbnail,
   };

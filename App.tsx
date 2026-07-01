@@ -7,7 +7,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useShareIntent } from 'expo-share-intent';
 
 import { theme } from './src/theme';
-import { compressUnderLimit, cancelCompression } from './src/lib/compress';
+import { compressUnderLimit, cancelCompression, trimToFit } from './src/lib/compress';
 import { TARGET_BYTES } from './src/lib/encodePlan';
 import { sendToDiscord, sendMultipleToDiscord, saveCopy } from './src/lib/share';
 import { isTerminal, outputUri, type BatchItem, type ItemState } from './src/lib/queue';
@@ -229,6 +229,15 @@ function AppInner() {
               const out = outputUri(single);
               if (out) sendToDiscord(out);
             }}
+            onTrimToFit={
+              single.kind === 'tooLong'
+                ? () => {
+                    trimToFit(single.result.originalUri, only.targetBytes).then((trimmedUri) => {
+                      start([{ uri: trimmedUri, name: only.name }], only.targetBytes);
+                    });
+                  }
+                : undefined
+            }
             onReset={reset}
           />
         );
