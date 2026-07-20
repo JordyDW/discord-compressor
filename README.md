@@ -4,6 +4,14 @@
   <img src="assets/icon-src/icon-rounded.png" width="128" alt="Discord Compressor app icon" />
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS-3DDC84?logo=android&logoColor=white" alt="Platform: Android | iOS" />
+  <img src="https://img.shields.io/badge/Expo%20SDK-57-000020?logo=expo&logoColor=white" alt="Expo SDK 57" />
+  <img src="https://img.shields.io/badge/React%20Native-0.86-61DAFB?logo=react&logoColor=black" alt="React Native 0.86" />
+  <img src="https://img.shields.io/badge/TypeScript-6.0-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6.0" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green" alt="License: MIT" /></a>
+</p>
+
 An Android (Expo / React Native) app that shrinks a phone video to fit Discord's
 **free 10 MB upload limit** — no Discord Nitro, no server Boosts.
 
